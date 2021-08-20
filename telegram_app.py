@@ -86,6 +86,8 @@ def setup(update:Update, context:CallbackContext) -> None:
             update.message.reply_text("ERROR: UnauthorizedException")
             
 
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text(':L')
 
 def get_chat_id(update:Update,context:CallbackContext):
     username = update.message.from_user.username
@@ -134,9 +136,13 @@ def start_monitor(update:Update, context:CallbackContext):
             servername = servernames[0]
             server.append(servername)
         print(server)
-        minecraft_server_monitor = mp.Process(target=monitor_start, args=(server,))
-        minecraft_server_monitor.start()
-        update.message.reply_text('start monitoring')
+        try:
+            minecraft_server_monitor = mp.Process(target=monitor_start, args=(server,))
+            minecraft_server_monitor.start()
+        except Exception as e:
+            update.message.reply_text("ERROR: "+str(e))
+        else:
+            update.message.reply_text('start monitoring')
     else:
         update.message.reply_text("ERROR: UnauthorizedException")
 
@@ -146,10 +152,10 @@ def stop_monitor(update:Update, context:CallbackContext):
     have_permission = verify(chat_id,accept_permission)
     if have_permission == True:
         minecraft_server_monitor.terminate()
-        time.sleep(3)
+        time.sleep(1)
         minecraft_server_monitor.terminate()
         minecraft_server_monitor.join()
-        update.message.reply_text('stop monitoring')
+        update.message.reply_text("stopped monitor")
     else:
         update.message.reply_text("ERROR: UnauthorizedException")
 

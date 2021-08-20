@@ -29,11 +29,6 @@ def get_ping_avg(target):
     ping_data = [one_min_avg,five_mins_avg,ten_mins_avg]
     return ping_data
 
-def start(update: Update, context: CallbackContext) -> None:
-
-    update.message.reply_text(':L')
-
-
 def status(update: Update, context: CallbackContext) :
     username = update.message.from_user.username
     chat_id = update.message.chat_id
