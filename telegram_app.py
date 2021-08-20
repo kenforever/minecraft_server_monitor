@@ -263,7 +263,7 @@ def main() -> None:
         fallbacks=[CommandHandler('status', status)],
     )
 
-    # add_server_handler = ConversationHandler(
+    # add_user_handler = ConversationHandler(
     #     entry_points=[CommandHandler('add_server', add_server)],
     #     states={
     #         USERNAME: [MessageHandler(Filters.text, add_user_username)],
@@ -280,8 +280,8 @@ def main() -> None:
     #     fallbacks=[CommandHandler('cancel', add_user_cancel)],
     # )
 
-    add_user_handler = ConversationHandler(
-        entry_points=[CommandHandler('add_user', add_user)],
+    add_server_handler = ConversationHandler(
+        entry_points=[CommandHandler('add_user', add_server)],
         states={
             server_name: [MessageHandler(Filters.text, add_server_servername)],
             user_group: [
