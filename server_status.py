@@ -44,6 +44,9 @@ def status(update: Update, context: CallbackContext) :
         c = conn.cursor()
         data = c.execute('select * from server')
         data = data.fetchall()
+        if data == []:
+            update.message.reply_text("ERROR: NoServerInDatabase")
+            return ConversationHandler.END
         keyboard = []
         keyboard_temp =[]
         for i in range(len(data)):
