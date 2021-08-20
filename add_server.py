@@ -83,7 +83,6 @@ def add_server_usergroup(update: Update, context: CallbackContext):
         with open(server_temp+username,"r") as f:
             data = json.load(f)
         data["user_group"] = usergroup
-        print(data)
         with open(server_temp+username,"w") as f:
             data = json.dumps(data)
             print(data,file=f)

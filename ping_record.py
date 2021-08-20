@@ -8,14 +8,24 @@ from numpy import mean
 import sqlite3
 from threading import Lock
 import pytz
-import sys
+import os
 import json
 
 timezone = pytz.timezone("Asia/Taipei")
 global lock
 lock= Lock()
 
+try:
+    os.mkdir("./database")
+    os.mkdir("./logs")
+    os.mkdir("./tmp")
+except FileExistsError:
+    pass
+except Exception as e:
+    print(e)    
 
+conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
+c = conn.cursor()
 offline = False
 ping_record = []
 stop = False
@@ -35,11 +45,8 @@ def get_current_ping(ip) -> float:
 
 def get_ping_avg(target):
     lock.acquire(True)
-    conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-    c = conn.cursor()
     cursor = c.execute("SELECT one_min_avg,five_mins_avg,ten_mins_avg from ping_avg where server = '"+target+"';")
     lock.release()
-    conn.close()
     for row in cursor:
         one_min_avg= row[0]
         five_mins_avg= row[1]
@@ -82,20 +89,15 @@ def send_msg(status,target):
         print(results.json(), file=f) 
 
 def clear_database(target):
-    conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-    c = conn.cursor()
     for i in range(0,60):
         temp = str(i)
         lock.acquire(True)
         c.execute("UPDATE '"+target+"' set ping = 1 where ID="+temp)
         conn.commit()
         lock.release()
-    conn.close()
 
 def ping_avg(target,i,ping_record) -> None:
     lock.acquire(True)
-    conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-    c = conn.cursor()
     ping_data = c.execute("SELECT ping from '"+target+"'")
     ping_temp = []
     for row in ping_data:
@@ -157,8 +159,7 @@ def loop(target,offline,ping_record) -> None:
                 with open(log, 'a+') as f:
                     print("[{time}] status:online server:{target}".format(time=datetime.datetime.now(timezone),target=target), file=f)    
                 offline = False
-                conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-                c = conn.cursor()
+
                 lock.acquire(True)
                 c.execute("UPDATE ping_avg set status = 'online' where server = '"+target+"';")
                 conn.commit()
@@ -171,8 +172,7 @@ def loop(target,offline,ping_record) -> None:
             if type(ping) ==str:
                 ping = 0
                 send_msg("timeout",target)
-                conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-                c = conn.cursor()
+            
                 lock.acquire(True)
                 c.execute("UPDATE ping_avg set status = 'offline' where server = '"+target+"';")
                 conn.commit()
@@ -187,8 +187,6 @@ def loop(target,offline,ping_record) -> None:
             
         ID = str(i)
         ping = str(ping)
-        conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-        c = conn.cursor()
         lock.acquire(True)
         c.execute("UPDATE '"+target+"' set ping = "+ping+" where ID="+ID)
         c.execute("UPDATE ping_avg set status = 'online' where server = '"+target+"';")
