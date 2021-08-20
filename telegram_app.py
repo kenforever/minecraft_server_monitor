@@ -45,14 +45,6 @@ def help_command(update: Update, context: CallbackContext) -> None:
 def setup(update:Update, context:CallbackContext) -> None:
     username = update.message.from_user.username
     chat_id = update.message.chat_id
-    try:
-        os.mkdir("./database")
-        os.mkdir("./logs")
-        os.mkdir("./tmp")
-    except FileExistsError:
-        pass
-    except Exception as e:
-        print(e)
     conn = sqlite3.connect('./database/user.db')
     c = conn.cursor()
 
@@ -217,4 +209,12 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    try:
+        os.mkdir("./database")
+        os.mkdir("./logs")
+        os.mkdir("./tmp")
+    except FileExistsError:
+        pass
+    except Exception as e:
+        print(e)
     main()
