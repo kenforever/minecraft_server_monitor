@@ -159,6 +159,81 @@ def stop_monitor(update:Update, context:CallbackContext):
     else:
         update.message.reply_text("ERROR: UnauthorizedException")
 
+# def add_user(update:Update, context:CallbackContext):
+#     chat_id = update.message.chat_id
+#     accept_permission = {"admin"}
+#     have_permission = verify(chat_id,accept_permission)
+#     if have_permission == True:
+#         update.message.reply_text("Good! please give me the username of who you want to add. dont need @.")
+#         return USERNAME
+#     else:
+#         update.message.reply_text("ERROR: UnauthorizedException")
+
+# def add_user_username(update:Update, context:CallbackContext):
+#     username = update.message.from_user.username
+#     username = update.message.text
+#     data = {'username':username,'chat_id':"",'user_group':"default","permission_group":"viewer"}
+#     have_record = check_history(username)
+#     print(have_record)
+#     if have_record == True:
+#         update.message.reply_text("ERROR: UserAlreadyExist")
+#         return ConversationHandler.END
+#     else:
+#         try:
+#             with open(server_temp+username, "w") as f:
+#                 data = json.dumps(data)
+#                 print(data,file=f)
+#         except Exception as e:
+#             update.message.reply_text("ERROR: "+str(e))
+#             return ConversationHandler.END
+#         else:
+#             update.message.reply_text('Great! now tell me the chat id.')
+#             return CHATID
+
+# def add_user_chatid(update:Update, context:CallbackContext):
+#     username = update.message.from_user.username
+#     chat_id = update.message.text
+#     try:
+#         with open(server_temp+username,"r") as f:
+#             data = json.load(f)
+#         data["chat_id"] = chat_id
+#         print(data)
+#         with open(server_temp+username,"w") as f:
+#             data = json.dumps(data)
+#             print(data,file=f)
+#     except Exception as e:
+#         update.message.reply_text("ERROR: "+str(e))
+#         return ConversationHandler.END
+#     else:
+#         update.message.reply_text('Great! now tell me the which group you want this user be. /skip for default group.')
+#         return USER_GROUP
+
+# def add_user_usergroup(update:Update, context:CallbackContext):
+#     username = update.message.from_user.username
+#     user_group = update.message.text
+#     try:
+#         with open(server_temp+username,"r") as f:
+#             data = json.load(f)
+#         data["user_group"] = user_group
+#         print(data)
+#         with open(server_temp+username,"w") as f:
+#             data = json.dumps(data)
+#             print(data,file=f)
+#     except Exception as e:
+#         update.message.reply_text("ERROR: "+str(e))
+#         return ConversationHandler.END
+#     else:
+#         update.message.reply_text('Great! now tell me the what permission you want to give this user. we have admin and viewer now. admin have full access and viewer is view only. /skip for view only.')
+#         return PERMISSION_GROUP
+
+# def add_user_skip_usergroup(update: Update, context: CallbackContext):
+#     update.message.reply_text('Skip! now tell me the what permission you want to give this user. we have admin and viewer now. admin have full access and viewer is view only. /skip for view only.')
+#     return PERMISSION_GROUP
+
+
+
+
+USERNAME, CHATID,PERMISSION_GROUP,USER_GROUP = range(4)
 detail= range(1)
 ALL,BACK = range(2)
 def main() -> None:
@@ -188,8 +263,25 @@ def main() -> None:
         fallbacks=[CommandHandler('status', status)],
     )
 
-    add_server_handler = ConversationHandler(
-        entry_points=[CommandHandler('add_server', add_server)],
+    # add_server_handler = ConversationHandler(
+    #     entry_points=[CommandHandler('add_server', add_server)],
+    #     states={
+    #         USERNAME: [MessageHandler(Filters.text, add_user_username)],
+    #         CHATID: [MessageHandler(Filters.text, add_user_chatid)],
+    #         USER_GROUP: [
+    #             CommandHandler('skip', add_user_skip_usergroup),
+    #             MessageHandler(Filters.text, add_user_usergroup),
+    #         ],
+    #         PERMISSION_GROUP: [
+    #             CommandHandler('skip', add_user_skip_permission_group),
+    #             MessageHandler(Filters.text, add_user_permission_group),
+    #         ],
+    #     },
+    #     fallbacks=[CommandHandler('cancel', add_user_cancel)],
+    # )
+
+    add_user_handler = ConversationHandler(
+        entry_points=[CommandHandler('add_user', add_user)],
         states={
             server_name: [MessageHandler(Filters.text, add_server_servername)],
             user_group: [
@@ -215,12 +307,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    try:
-        os.mkdir("./database")
-        os.mkdir("./logs")
-        os.mkdir("./tmp")
-    except FileExistsError:
-        pass
-    except Exception as e:
-        print(e)
     main()

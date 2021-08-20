@@ -19,15 +19,18 @@ detail= range(1)
 ALL,BACK = range(2)
 
 def get_ping_avg(target):
-    conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
-    c = conn.cursor()
-    cursor = c.execute("SELECT one_min_avg,five_mins_avg,ten_mins_avg from ping_avg where server = '"+target+"';")
-    for row in cursor:
-        one_min_avg= row[0]
-        five_mins_avg= row[1]
-        ten_mins_avg= row[2]
-    ping_data = [one_min_avg,five_mins_avg,ten_mins_avg]
-    return ping_data
+    try:
+        conn = sqlite3.connect('./database/ping_data.db',check_same_thread=False)
+        c = conn.cursor()
+        cursor = c.execute("SELECT one_min_avg,five_mins_avg,ten_mins_avg from ping_avg where server = '"+target+"';")
+        for row in cursor:
+            one_min_avg= row[0]
+            five_mins_avg= row[1]
+            ten_mins_avg= row[2]
+        ping_data = [one_min_avg,five_mins_avg,ten_mins_avg]
+        return ping_data
+    except Exception as e:
+        print(e)
 
 def status(update: Update, context: CallbackContext) :
     username = update.message.from_user.username
@@ -47,7 +50,7 @@ def status(update: Update, context: CallbackContext) :
         for i in range(len(data)):
             servername = data[i][0]
             nickname = data[i][2]
-            keyboard_data = InlineKeyboardButton(servername, callback_data=nickname)
+            keyboard_data = InlineKeyboardButton(nickname, callback_data=servername)
             keyboard_temp.insert(0,keyboard_data)
             if (i%2 == 0):
                 keyboard.insert(0,keyboard_temp)

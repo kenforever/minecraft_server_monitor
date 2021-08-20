@@ -82,7 +82,7 @@ def send_msg(status,target):
     ten_mins_avg = str(round(ping_avg[2],3))
     for chat_id in chat_ids:
         text = "["+time+"] \n" +"server:"+target+"\n"+"status:"+status+"\nping avg:\n 1min       5mins      10mins \n"+one_min_avg+"     "+five_mins_avg+"     "+ten_mins_avg     #text going to send
-        url_req = "https://api.telegram.org/bot" + token + "/sendMessage" + "?chat_id=" + chat_id + "&text=" + text 
+        url_req = "https://api.telegram.org/bot" + token + "/sendMessage" + "?chat_id=" + str(chat_id) + "&text=" + text 
     results = requests.get(url_req)   #send alert 
     # print("[{time}] message sent server:{target}".format(time=datetime.datetime.now(timezone),target=target))
     with open(log, 'a+') as f:
