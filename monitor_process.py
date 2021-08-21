@@ -108,7 +108,7 @@ def monitor_start_all(update:Update, context:CallbackContext):
         for servernames in servers:
             servername = servernames[0]
             update.callback_query.message.edit_text(servername+' starting...\n')
-            server.append(servername)
+            server =[servername]
             monitor_process_test(server)
             update.callback_query.message.edit_text(servername+" started!\n")
         keyboard = [[InlineKeyboardButton("back to manu", callback_data=str(MENU))]]

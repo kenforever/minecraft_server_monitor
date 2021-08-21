@@ -53,7 +53,10 @@ def status(update: Update, context: CallbackContext) :
             nickname = data[i][2]
             keyboard_data = InlineKeyboardButton(nickname, callback_data=servername)
             keyboard_temp.insert(0,keyboard_data)
-            if (i%2 == 0):
+            if (i%2 == 1):
+                keyboard.insert(0,keyboard_temp)
+                keyboard_temp = []
+            elif (i == len(data)+1):
                 keyboard.insert(0,keyboard_temp)
                 keyboard_temp = []
         keyboard_all = [InlineKeyboardButton("all", callback_data=str(ALL))]
