@@ -4,6 +4,7 @@ import threading
 import time
 import uuid 
 import sys
+import multiprocessing
 
 def add_database_record(target) -> None:
     conn = sqlite3.connect('./database/ping_data.db')
@@ -109,3 +110,24 @@ def monitor_start(server:list):
         start(target,i)
         time.sleep(1)
 
+global all_monitor
+all_monitor = []
+
+def monitor_process_test(servers:list):
+    try:
+        init_database()
+    except Exception as e :
+        print(e)
+        pass
+    
+    for i in range(len(servers)):
+        try:
+            add_database_record(servers[i])
+        except Exception as e:
+            print(e)
+
+    for server in servers:
+        monitor = multiprocessing.Process(target=start_monitoring, args=(server,))
+        monitor.start()
+        monitor_name = {server:monitor}
+        all_monitor.append(monitor_name)

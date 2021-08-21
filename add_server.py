@@ -16,24 +16,6 @@ import os
 server_name, user_group, nickname = range(3)
 server_temp = "./tmp/temp_"
 
-def check_history(target) -> bool:
-    try:
-        conn = sqlite3.connect('./database/user.db')
-        c = conn.cursor()
-        data = c.execute("select server_name from server where server_name = '"+target+"';")
-        data = data.fetchall()
-        conn.commit()
-        conn.close()
-        try:
-            data = data[0][0]
-
-        except IndexError:
-            return False
-        else:
-            return True
-
-    except Exception as e:
-        return e
 
 
 def add_server(update:Update, context:CallbackContext):
@@ -113,7 +95,7 @@ def add_server_nickname(update: Update, context: CallbackContext):
     try:
         conn = sqlite3.connect('./database/user.db')
         c = conn.cursor()
-        c.execute("insert into server(server_name,user_group,nickname) values(?,?,?)",(servername,usergroup,nickname))
+        c.execute("insert into server(server_name,user_group,nickname,monitoring) values(?,?,?,0)",(servername,usergroup,nickname))
     except Exception as e:
         update.message.reply_text("ERROR: "+str(e))
         return ConversationHandler.END
@@ -144,7 +126,7 @@ def add_server_skip_nickname(update: Update, context: CallbackContext):
     try:
         conn = sqlite3.connect('./database/user.db')
         c = conn.cursor()
-        c.execute("insert into server(server_name,user_group,nickname) values(?,?,?)",(servername,usergroup,nickname))
+        c.execute("insert into server(server_name,user_group,nickname,monitoring) values(?,?,?,0)",(servername,usergroup,nickname))
     except Exception as e:
         update.message.reply_text("ERROR: "+str(e))
         os.remove(temp_file)

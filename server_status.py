@@ -44,6 +44,7 @@ def status(update: Update, context: CallbackContext) :
         data = data.fetchall()
         if data == []:
             update.message.reply_text("ERROR: NoServerInDatabase")
+            conn.close()
             return ConversationHandler.END
         keyboard = []
         keyboard_temp =[]
@@ -58,9 +59,31 @@ def status(update: Update, context: CallbackContext) :
         keyboard_all = [InlineKeyboardButton("all", callback_data=str(ALL))]
         keyboard.insert(0,keyboard_all)
         reply_markup = InlineKeyboardMarkup(keyboard)
+        conn.close()
         update.message.reply_text('選擇欲查詢之伺服器:', reply_markup=reply_markup)
         return detail
-
+        
+    elif permission == "viewer":
+        conn = sqlite3.connect('./database/user.db',check_same_thread=False)
+        c = conn.cursor()
+        data = c.execute('select * from server where user_group = "'+user_group+'"')
+        data = data.fetchall()
+        if data == []:
+            update.message.reply_text("ERROR: NoServerInDatabase")
+            return ConversationHandler.END
+        keyboard = []
+        keyboard_temp =[]
+        for i in range(len(data)):
+            servername = data[i][0]
+            nickname = data[i][2]
+            keyboard_data = InlineKeyboardButton(nickname, callback_data=servername)
+            keyboard_temp.insert(0,keyboard_data)
+            if (i%2 == 0):
+                keyboard.insert(0,keyboard_temp)
+                keyboard_temp = []
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.message.reply_text('選擇欲查詢之伺服器:', reply_markup=reply_markup)
+        return detail
 
 
 

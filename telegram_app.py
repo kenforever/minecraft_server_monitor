@@ -2,16 +2,12 @@
 # pylint: disable=C0116,W0613
 # This program is dedicated to the public domain under the CC0 license.
 
-"""
-Basic example for a bot that uses inline keyboards. For an in-depth explanation, check out
- https://git.io/JOmFw.
-"""
 import logging
 from os import getgrouplist
 from typing import Text
 from warnings import catch_warnings
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, chat, user
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, chat, user, ReplyKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, commandhandler
 import sqlite3
 import datetime
 import pytz
@@ -25,7 +21,8 @@ from setup import *
 import multiprocessing as mp
 import os
 import sys
-
+from add_user import *
+from monitor_process import *
 
 timezone = pytz.timezone("Asia/Taipei")
 
@@ -38,9 +35,9 @@ logger = logging.getLogger(__name__)
 def help_command(update: Update, context: CallbackContext) -> None:
     """Displays info on how to use the bot."""
     update.message.reply_text("/status choose which server you want to watch.\n\
-                                /get_chat_id get your chat_id.\
-                                /setup init database.\
-                                /add_server add server to mointor database.")
+/get_chat_id get your chat_id.\
+/setup init database.\
+/add_server add server to mointor database.")
 
 def setup(update:Update, context:CallbackContext) -> None:
     username = update.message.from_user.username
@@ -68,7 +65,7 @@ def setup(update:Update, context:CallbackContext) -> None:
                 c.execute("INSERT INTO permission_group(group_name,permission) values('admin','all')")
                 c.execute("INSERT INTO permission_group(group_name,permission) values('viewer','view')")
 
-                c.execute('CREATE TABLE server(server_name TEXT NOT NULL, user_group TEXT ,nickname TEXT)')
+                c.execute('CREATE TABLE server(server_name TEXT NOT NULL, user_group TEXT ,nickname TEXT,monitoring INT NOT NULL)')
 
             except Exception as e:
                 update.message.reply_text("fail with error:"+str(e))
@@ -94,32 +91,6 @@ def get_chat_id(update:Update,context:CallbackContext):
     chat_id = update.message.chat_id
     update.message.reply_text("hello "+username+". your chat_id is: "+str(chat_id))
 
-def allow_user(update:Update, context:CallbackContext):
-    username = update.message.from_user.username
-    chat_id = update.message.chat_id
-    conn = sqlite3.connect('./database/user.db')
-    c = conn.cursor()
-    users = c.execute("SELECT username,chat_id from user")
-    for row in users:
-        if username == row[0] and chat_id == row[1]:
-            try:
-                target_username = context.args[0]
-                target_chat_id = context.args[1]
-            except Exception as e:
-                update.message.reply_text("ERROR: "+str(e))
-            else:
-                try:
-                    c.execute("INSERT INTO user_allow (username,chat_id) values('"+target_username+"',"+str(target_chat_id)+")")
-                except Exception as e:
-                    update.message.reply_text("ERROR: "+str(e))
-                else:
-                    update.message.reply_text("allowed user "+target_username)
-            finally:
-                conn.commit()
-                conn.close()
-        else:
-            update.message.reply_text("ERROR: UnauthorizedException")
-
 def start_monitor(update:Update, context:CallbackContext):
     username = update.message.from_user.username
     chat_id = update.message.chat_id
@@ -129,7 +100,7 @@ def start_monitor(update:Update, context:CallbackContext):
         global minecraft_server_monitor
         conn = sqlite3.connect('./database/user.db')
         c = conn.cursor()
-        server_temp = c.execute("SELECT server_name from server")
+        server_temp = c.execute("SELECT server_name from server where monitoring = 0")
         server_temp = server_temp.fetchall()
         server = []
         for servernames in server_temp:
@@ -159,83 +130,28 @@ def stop_monitor(update:Update, context:CallbackContext):
     else:
         update.message.reply_text("ERROR: UnauthorizedException")
 
-# def add_user(update:Update, context:CallbackContext):
-#     chat_id = update.message.chat_id
-#     accept_permission = {"admin"}
-#     have_permission = verify(chat_id,accept_permission)
-#     if have_permission == True:
-#         update.message.reply_text("Good! please give me the username of who you want to add. dont need @.")
-#         return USERNAME
-#     else:
-#         update.message.reply_text("ERROR: UnauthorizedException")
-
-# def add_user_username(update:Update, context:CallbackContext):
-#     username = update.message.from_user.username
-#     username = update.message.text
-#     data = {'username':username,'chat_id':"",'user_group':"default","permission_group":"viewer"}
-#     have_record = check_history(username)
-#     print(have_record)
-#     if have_record == True:
-#         update.message.reply_text("ERROR: UserAlreadyExist")
-#         return ConversationHandler.END
-#     else:
-#         try:
-#             with open(server_temp+username, "w") as f:
-#                 data = json.dumps(data)
-#                 print(data,file=f)
-#         except Exception as e:
-#             update.message.reply_text("ERROR: "+str(e))
-#             return ConversationHandler.END
-#         else:
-#             update.message.reply_text('Great! now tell me the chat id.')
-#             return CHATID
-
-# def add_user_chatid(update:Update, context:CallbackContext):
-#     username = update.message.from_user.username
-#     chat_id = update.message.text
-#     try:
-#         with open(server_temp+username,"r") as f:
-#             data = json.load(f)
-#         data["chat_id"] = chat_id
-#         print(data)
-#         with open(server_temp+username,"w") as f:
-#             data = json.dumps(data)
-#             print(data,file=f)
-#     except Exception as e:
-#         update.message.reply_text("ERROR: "+str(e))
-#         return ConversationHandler.END
-#     else:
-#         update.message.reply_text('Great! now tell me the which group you want this user be. /skip for default group.')
-#         return USER_GROUP
-
-# def add_user_usergroup(update:Update, context:CallbackContext):
-#     username = update.message.from_user.username
-#     user_group = update.message.text
-#     try:
-#         with open(server_temp+username,"r") as f:
-#             data = json.load(f)
-#         data["user_group"] = user_group
-#         print(data)
-#         with open(server_temp+username,"w") as f:
-#             data = json.dumps(data)
-#             print(data,file=f)
-#     except Exception as e:
-#         update.message.reply_text("ERROR: "+str(e))
-#         return ConversationHandler.END
-#     else:
-#         update.message.reply_text('Great! now tell me the what permission you want to give this user. we have admin and viewer now. admin have full access and viewer is view only. /skip for view only.')
-#         return PERMISSION_GROUP
-
-# def add_user_skip_usergroup(update: Update, context: CallbackContext):
-#     update.message.reply_text('Skip! now tell me the what permission you want to give this user. we have admin and viewer now. admin have full access and viewer is view only. /skip for view only.')
-#     return PERMISSION_GROUP
-
-
+def add(update:Update, context:CallbackContext):
+    chat_id = update.message.chat_id
+    accept_permission = {"admin"}
+    have_permission = verify(chat_id,accept_permission)
+    if have_permission == True:
+        reply_keyboard = [
+            ['/add_server'],
+            ['/add_user']
+        ]
+        reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        update.message.reply_text('what you want to add?', reply_markup=reply_markup)
+        return detail
+    else:
+        update.message.reply_text("ERROR: UnauthorizedException")
 
 
 USERNAME, CHATID,PERMISSION_GROUP,USER_GROUP = range(4)
+ADD = range(1)
+SERVER,USER = range(2)
 detail= range(1)
 ALL,BACK = range(2)
+
 def main() -> None:
     """Run the bot."""
     # Create the Updater and pass it your bot's token.
@@ -248,9 +164,10 @@ def main() -> None:
     updater.dispatcher.add_handler(CommandHandler('setup', setup))
     updater.dispatcher.add_handler(CommandHandler('help', help_command))
     updater.dispatcher.add_handler(CommandHandler('get_chat_id', get_chat_id))
-    updater.dispatcher.add_handler(CommandHandler('allow_user', allow_user))
     updater.dispatcher.add_handler(CommandHandler('start_monitor', start_monitor))
     updater.dispatcher.add_handler(CommandHandler('stop_monitor', stop_monitor))
+    updater.dispatcher.add_handler(CommandHandler('add', add))
+    updater.dispatcher.add_handler(CommandHandler('process_start', process_start))
     status_handler = ConversationHandler(
         entry_points=[CommandHandler('status', status)],
         states={
@@ -263,25 +180,39 @@ def main() -> None:
         fallbacks=[CommandHandler('status', status)],
     )
 
-    # add_user_handler = ConversationHandler(
-    #     entry_points=[CommandHandler('add_server', add_server)],
-    #     states={
-    #         USERNAME: [MessageHandler(Filters.text, add_user_username)],
-    #         CHATID: [MessageHandler(Filters.text, add_user_chatid)],
-    #         USER_GROUP: [
-    #             CommandHandler('skip', add_user_skip_usergroup),
-    #             MessageHandler(Filters.text, add_user_usergroup),
-    #         ],
-    #         PERMISSION_GROUP: [
-    #             CommandHandler('skip', add_user_skip_permission_group),
-    #             MessageHandler(Filters.text, add_user_permission_group),
-    #         ],
-    #     },
-    #     fallbacks=[CommandHandler('cancel', add_user_cancel)],
-    # )
+    monitor_handler = ConversationHandler(
+        entry_points=[CommandHandler('monitor_menu', monitor_menu)],
+        states={
+            CONTROL: [
+                CallbackQueryHandler(monitor_callback_menu, pattern='^' + str(MENU) + '$'),
+                CallbackQueryHandler(monitor_start_all, pattern='^' + str(START_ALL) + '$'),
+                CallbackQueryHandler(monitor_stop_all, pattern='^' + str(STOP_ALL) + '$'),
+                CallbackQueryHandler(monitor_control),
+            ],
+        },
+        fallbacks=[CommandHandler('status', status)],
+    )
+
+    add_user_handler = ConversationHandler(
+        entry_points=[CommandHandler('add_user', add_user)],
+        states={
+            USERNAME: [MessageHandler(Filters.text, add_user_username)],
+            CHATID: [MessageHandler(Filters.text, add_user_chatid)],
+            USER_GROUP: [
+                CommandHandler('skip', add_user_skip_usergroup),
+                MessageHandler(Filters.text, add_user_usergroup),
+            ],
+            PERMISSION_GROUP: [
+                CommandHandler('skip', add_user_skip_permission_group),
+                MessageHandler(Filters.text, add_user_permission_group),
+            ],
+        },
+        fallbacks=[CommandHandler('fallback', fallback)],
+    )
+
 
     add_server_handler = ConversationHandler(
-        entry_points=[CommandHandler('add_user', add_server)],
+        entry_points=[CommandHandler('add_server', add_server)],
         states={
             server_name: [MessageHandler(Filters.text, add_server_servername)],
             user_group: [
@@ -297,7 +228,9 @@ def main() -> None:
     )
 
     updater.dispatcher.add_handler(add_server_handler)
+    updater.dispatcher.add_handler(add_user_handler)
     updater.dispatcher.add_handler(status_handler)
+    updater.dispatcher.add_handler(monitor_handler)
     # Start the Bot
     updater.start_polling()
 

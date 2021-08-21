@@ -14,6 +14,8 @@ import json
 timezone = pytz.timezone("Asia/Taipei")
 global lock
 lock= Lock()
+global all_monitor
+all_monitor = []
 
 try:
     os.mkdir("./database")
@@ -198,5 +200,14 @@ def loop(target,offline,ping_record) -> None:
         time.sleep(10)
 
 def start_monitoring(target):
-        while offline != True:
-            loop(target,offline,ping_record)
+    lock.acquire(True)
+    pid = os.getpid()
+    conn = sqlite3.connect('./database/user.db')
+    c = conn.cursor()
+    c.execute("update server monitoring = '?' where server = '?'",(pid,target))
+    conn.commit()
+    conn.close()
+    lock.release()
+    
+    while offline != True:
+        loop(target,offline,ping_record)
