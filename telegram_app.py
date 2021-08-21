@@ -107,7 +107,6 @@ def start_monitor(update:Update, context:CallbackContext):
         for servernames in server_temp:
             servername = servernames[0]
             server.append(servername)
-        print(server)
         try:
             minecraft_server_monitor = mp.Process(target=monitor_start, args=(server,))
             minecraft_server_monitor.start()
@@ -158,7 +157,6 @@ def main() -> None:
     # Create the Updater and pass it your bot's token.
     with open("config.json","r") as f:
         data = json.load(f) 
-        print(type(data))
     token = data["telegram_token"]
     updater = Updater(token)
 
@@ -182,18 +180,20 @@ def main() -> None:
     )
 
     monitor_handler = ConversationHandler(
-        entry_points=[CommandHandler('monitor_menu', monitor_menu)],
+        entry_points=[CommandHandler('monitor', monitor_menu)],
         states={
-            CONTROL: [
+            CONTROL_ALL: [
                 CallbackQueryHandler(monitor_callback_menu, pattern='^' + str(MENU) + '$'),
                 CallbackQueryHandler(monitor_start_all, pattern='^' + str(START_ALL) + '$'),
                 CallbackQueryHandler(monitor_stop_all, pattern='^' + str(STOP_ALL) + '$'),
-                CallbackQueryHandler(monitor_start, pattern='.'+str(START) + '.'),
-                CallbackQueryHandler(monitor_stop, pattern='.' + str(STOP) + '.'),
-                CallbackQueryHandler(monitor_control),
+                CallbackQueryHandler(monitor_control_panel),
             ],
+            CONTROL: [
+                CallbackQueryHandler(monitor_callback_menu, pattern='^' + str(MENU) + '$'),
+                CallbackQueryHandler(monitor_control),
+            ]
         },
-        fallbacks=[CommandHandler('status', status)],
+        fallbacks=[CommandHandler('fallback', fallback)],
     )
 
     add_user_handler = ConversationHandler(
