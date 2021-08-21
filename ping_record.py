@@ -204,7 +204,7 @@ def start_monitoring(target):
     pid = os.getpid()
     conn = sqlite3.connect('./database/user.db')
     c = conn.cursor()
-    c.execute("update server monitoring = '?' where server = '?'",(pid,target))
+    c.execute("update server set monitoring = '"+str(pid)+"' where server_name = '"+target+"'")
     conn.commit()
     conn.close()
     lock.release()

@@ -4,6 +4,7 @@
 
 import logging
 from os import getgrouplist
+from sqlite3.dbapi2 import OperationalError
 from typing import Text
 from warnings import catch_warnings
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, chat, user, ReplyKeyboardMarkup
@@ -167,7 +168,7 @@ def main() -> None:
     updater.dispatcher.add_handler(CommandHandler('start_monitor', start_monitor))
     updater.dispatcher.add_handler(CommandHandler('stop_monitor', stop_monitor))
     updater.dispatcher.add_handler(CommandHandler('add', add))
-    updater.dispatcher.add_handler(CommandHandler('process_start', process_start))
+    # updater.dispatcher.add_handler(CommandHandler('process_start', process_start))
     status_handler = ConversationHandler(
         entry_points=[CommandHandler('status', status)],
         states={
@@ -187,6 +188,8 @@ def main() -> None:
                 CallbackQueryHandler(monitor_callback_menu, pattern='^' + str(MENU) + '$'),
                 CallbackQueryHandler(monitor_start_all, pattern='^' + str(START_ALL) + '$'),
                 CallbackQueryHandler(monitor_stop_all, pattern='^' + str(STOP_ALL) + '$'),
+                CallbackQueryHandler(monitor_start, pattern='.'+str(START) + '.'),
+                CallbackQueryHandler(monitor_stop, pattern='.' + str(STOP) + '.'),
                 CallbackQueryHandler(monitor_control),
             ],
         },
@@ -238,6 +241,19 @@ def main() -> None:
     # SIGTERM or SIGABRT
     updater.idle()
 
+def reset_database():
+    lock.acquire(True)
+    conn = sqlite3.connect('./database/user.db')
+    c = conn.cursor()
+    c.execute("update server set monitoring = '0'")
+    conn.commit()
+    conn.close()
+    lock.release()
 
 if __name__ == '__main__':
+    try:
+        reset_database()
+    except Exception as e:
+        print(str(e))
+        pass
     main()
